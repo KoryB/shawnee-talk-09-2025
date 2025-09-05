@@ -1,3 +1,5 @@
+from . import gpu
+
 import argparse
 
 import pygame
@@ -14,6 +16,10 @@ def main(args):
 
     screen = pygame.display.set_mode((1280,720))
 
+    buff = gpu.get_buffer(720, 720)
+    buff[0:100, 0:100] = 0xFF000000 # Fucking endianness
+    square = pygame.image.frombuffer(buff.data, buff.shape, gpu.SURFACE_MODE)
+
     clock = pygame.time.Clock()
 
     while True:
@@ -27,6 +33,8 @@ def main(args):
         # ...
 
         screen.fill("purple")  # Fill the display with a solid color
+
+        screen.blit(square, ((1280-720)/2, 0))
 
         # Render the graphics here.
         # ...
