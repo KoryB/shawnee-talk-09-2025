@@ -17,7 +17,7 @@ def main(args):
     screen = pygame.display.set_mode((1280,720))
 
     buff = gpu.get_buffer(720, 720)
-    buff[0:100, 0:100] = 0xFF000000 # Fucking endianness
+    buff[0:100, 0:100] = 0xFF000000 # TODO KB: endianness
     square = pygame.image.frombuffer(buff.data, buff.shape, gpu.SURFACE_MODE)
 
     clock = pygame.time.Clock()
