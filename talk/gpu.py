@@ -3,7 +3,7 @@ from typing import Tuple
 
 import numpy as np
 import pygame
-from numba import njit
+from numba import njit, jit
 
 
 @dataclass
@@ -70,13 +70,13 @@ def get_line(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def interpolate_y(a: np.ndarray, b: np.ndarray) -> np.ndarray:
-    npoints = b[0] - a[0]
+    npoints = b[0] - a[0] + 1
 
     return np.linspace(a[1], b[1], npoints, dtype=np.int32)
 
 
 def interpolate_x(a: np.ndarray, b: np.ndarray) -> np.ndarray:
-    npoints = b[1] - a[1]
+    npoints = b[1] - a[1] + 1
 
     return np.linspace(a[0], b[0], npoints, dtype=np.int32)
 
@@ -105,8 +105,6 @@ def draw_triangle(buff: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray,
 
     if c[1] < b[1]:
         b, c = c, b
-
-    print(a, b, c, sep='\n')
 
     xab = interpolate_x(a, b)
     xbc = interpolate_x(b, c)

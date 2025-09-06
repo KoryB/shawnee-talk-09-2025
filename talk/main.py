@@ -26,6 +26,7 @@ def main(args):
     # gpu.draw_triangle(buff.array, np.array([64, 64]), np.array([360, 128]), np.array([64, 128]), gpu.Color(255, 0, 0).as_numpy())
 
     square = buff.get_surface()
+    font = pygame.font.SysFont("Georgia", 16)
 
     clock = pygame.time.Clock()
 
@@ -39,7 +40,8 @@ def main(args):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 gpu.clear(buff, gpu.DEFAULT_COLOR)
 
-                gpu.draw_triangle(buff.array, np.array([64, 64]), np.array(event.pos), np.array([64, 128]), gpu.Color(255, 0, 0).as_numpy())
+        for i in range(100):
+            gpu.draw_triangle(buff.array, np.array([0,0]), np.array([0, 120]), np.array([200, 120]), gpu.Color(255, 0, 0).as_numpy())
 
         # Do logical updates here.
         # ...
@@ -49,6 +51,8 @@ def main(args):
         screen.fill("purple")  # Fill the display with a solid color
 
         screen.blit(square, (0, 0))
+        surf = font.render(f"FPS: {clock.get_fps()}", False, (0, 0, 0))
+        screen.blit(surf, (0, 0))
 
         # Render the graphics here.
         # ...
