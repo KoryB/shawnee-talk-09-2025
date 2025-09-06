@@ -16,9 +16,11 @@ def main(args):
 
     screen = pygame.display.set_mode((1280,720))
 
-    buff = gpu.get_buffer(720, 720)
-    buff[0:100, 0:100] = 0xFF000000 # TODO KB: endianness
-    square = pygame.image.frombuffer(buff.data, buff.shape, gpu.SURFACE_MODE)
+    buff = gpu.get_buffer(540, 720)
+    
+    gpu.draw_rect(buff, 16, 32, 64, 128, gpu.Color(0x00, 0x00, 0x00))
+
+    square = buff.get_surface()
 
     clock = pygame.time.Clock()
 
