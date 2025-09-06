@@ -3,6 +3,7 @@ from . import gpu
 import argparse
 
 import pygame
+import numpy as np
 
 
 def parse_args():
@@ -19,6 +20,7 @@ def main(args):
     buff = gpu.get_buffer(540, 720)
     
     gpu.draw_rect(buff, 16, 32, 64, 128, gpu.Color(0x00, 0x00, 0x00))
+    gpu.draw_triangle(buff, np.array([64, 64]), np.array([128, 128]), np.array([64, 128]), gpu.Color(255, 0, 0))
 
     square = buff.get_surface()
 

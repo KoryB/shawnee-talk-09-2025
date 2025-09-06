@@ -17,7 +17,7 @@ class Color:
 
     def as_numpy(self) -> np.ndarray:
         return np.array([self.r, self.g, self.b, self.a], dtype=np.uint8)
-    
+
 
 class Buffer:
     def __init__(self, array: np.ndarray):
@@ -45,3 +45,47 @@ def clear(buff: Buffer, color: Color):
 
 def draw_rect(buff: Buffer, x: int, y: int, w: int, h: int, color: Color):
     buff.array[y:(y+h), x:(x+w), :] = color.as_numpy()[np.newaxis, np.newaxis, :]
+
+
+def get_aabb(*points: np.ndarray):
+    min = np.min(points, axis=0)
+    max = np.max(points, axis=0)
+
+    return min, max
+
+
+# https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+# Currently only accepts ints, operates directly on the buffer
+def draw_triangle(buff: Buffer, a: np.ndarray, b: np.ndarray, c: np.ndarray, color: Color):
+    # I'll need to do bounds detection
+
+    aabb_min, aabb_max = get_aabb(a, b, c)
+
+    if np.array_equal(aabb_min, aabb_max):
+        return
+
+    # https://stackoverflow.com/questions/32208359/is-there-a-multi-dimensional-version-of-arange-linspace-in-numpy
+    points = np.mgrid[aabb_min[0]:aabb_max[0], aabb_min[1]:aabb_max[1]].reshape(2,-1).T
+
+    v0 = b - a
+    v1 = c - a
+    v2_points = points - a
+
+    d00 = np.dot(v0, v0)
+    d01 = np.dot(v0, v1)
+    d11 = np.dot(v1, v1)
+    d20 = np.dot(v2_points, v0)
+    d21 = np.dot(v2_points, v1)
+    
+    denom = d00 * d11 - d01 * d01;
+
+    v = (d11 * d20 - d01 * d21) / denom;
+    w = (d00 * d21 - d01 * d20) / denom;
+    u = 1.0 - v - w;
+
+    mask = (v > 0) & (w > 0) & (u > 0) & (v + w + u <= 1.0)
+
+    triangle_points = points[mask]
+
+    buff.array[triangle_points[:, 1], triangle_points[:, 0], :] = color.as_numpy()[np.newaxis, np.newaxis, :]
+
