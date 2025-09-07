@@ -13,18 +13,25 @@ Everything is assumed to be single threaded (yay)
 """
 
 
+class ScratchBufferType(Enum):
+    INT = 0
+    UINT = 1
+    FLOAT = 2
+
+
 SURFACE_MODE = "RGBA"
 OUTPUT_WIDTH = 320
 OUTPUT_HEIGHT = 240
+NUM_SCRATCH_BUFFERS = 32
 
 INTEGER_DTYPE = np.int16
 UNSIGNED_INTEGER_DTYPE = np.uint16
 FLOAT_DTYPE = np.float32
 MAX_INT = np.iinfo(INTEGER_DTYPE).max
 MAX_UINT = np.iinfo(UNSIGNED_INTEGER_DTYPE).max
-NUM_SCRATCH_BUFFERS = 32
 SEQUENCE_INT = np.arange(MAX_INT, dtype=INTEGER_DTYPE)
 SEQUENCE_UINT = np.arange(MAX_UINT, dtype=UNSIGNED_INTEGER_DTYPE)
+BUFFER_MGRID_Y, BUFFER_MGRID_X = np.mgrid[:OUTPUT_HEIGHT, :OUTPUT_WIDTH].astype(UNSIGNED_INTEGER_DTYPE)
 
 SCRATCH_BUFFER_SIZE = MAX_UINT
 
@@ -36,6 +43,18 @@ SCRATCH_BUFFER_FLOAT = np.zeros((NUM_SCRATCH_BUFFERS, SCRATCH_BUFFER_SIZE), dtyp
 SCRATCH_BUFFER_INT_IN_USE = np.array([False] * NUM_SCRATCH_BUFFERS, dtype=bool)
 SCRATCH_BUFFER_UINT_IN_USE = np.array([False] * NUM_SCRATCH_BUFFERS, dtype=bool)
 SCRATCH_BUFFER_FLOAT_IN_USE = np.array([False] * NUM_SCRATCH_BUFFERS, dtype=bool)
+
+SCRATCH_BUFFERS = {
+    ScratchBufferType.INT: SCRATCH_BUFFER_INT,
+    ScratchBufferType.UINT: SCRATCH_BUFFER_UINT,
+    ScratchBufferType.FLOAT: SCRATCH_BUFFER_FLOAT,
+}
+
+SCRATCH_BUFFER_IN_USES = {
+    ScratchBufferType.INT: SCRATCH_BUFFER_INT_IN_USE,
+    ScratchBufferType.UINT: SCRATCH_BUFFER_UINT_IN_USE,
+    ScratchBufferType.FLOAT: SCRATCH_BUFFER_FLOAT_IN_USE,
+}
 
 
 class Color:
@@ -64,47 +83,22 @@ class Buffer:
 
         return surf
     
-# Refactor to be reusable?
-@contextmanager
-def sb_int(size: UNSIGNED_INTEGER_DTYPE):
-    assert not np.all(SCRATCH_BUFFER_INT_IN_USE)
 
-    index = np.argmin(SCRATCH_BUFFER_INT_IN_USE)
-    SCRATCH_BUFFER_INT_IN_USE[index] = True
+def get_sb(size: UNSIGNED_INTEGER_DTYPE, type: ScratchBufferType) -> Union[np.ndarray, UNSIGNED_INTEGER_DTYPE]:
+    sbs = SCRATCH_BUFFERS[type]
+    in_use = SCRATCH_BUFFER_IN_USES[type]
 
-    try:
-        yield SCRATCH_BUFFER_INT[index, :size]
+    assert ~np.all(in_use)
 
-    finally:
-        SCRATCH_BUFFER_INT_IN_USE[index] = False
+    handle = np.argmin(in_use)
+    in_use[handle] = True
+
+    return sbs[handle, :size], handle
 
 
-@contextmanager
-def sb_uint(size: UNSIGNED_INTEGER_DTYPE):
-    assert not np.all(SCRATCH_BUFFER_UINT_IN_USE)
-
-    index = np.argmin(SCRATCH_BUFFER_UINT_IN_USE)
-    SCRATCH_BUFFER_UINT_IN_USE[index] = True
-
-    try:
-        yield SCRATCH_BUFFER_UINT[index, :size]
-
-    finally:
-        SCRATCH_BUFFER_UINT_IN_USE[index] = False
-
-
-@contextmanager
-def sb_float(size: UNSIGNED_INTEGER_DTYPE):
-    assert not np.all(SCRATCH_BUFFER_FLOAT_IN_USE)
-
-    index = np.argmin(SCRATCH_BUFFER_FLOAT_IN_USE)
-    SCRATCH_BUFFER_FLOAT_IN_USE[index] = True
-
-    try:
-        yield SCRATCH_BUFFER_FLOAT[index, :size]
-
-    finally:
-        SCRATCH_BUFFER_FLOAT_IN_USE[index] = False
+def free_sb(handle: UNSIGNED_INTEGER_DTYPE, type: ScratchBufferType):
+    assert SCRATCH_BUFFER_IN_USES[type][handle]
+    SCRATCH_BUFFER_IN_USES[type][handle] = False
 
 
 def get_buffer(width: int, height: int, color: Color = Color(0xFF, 0x00, 0xFF)) -> Buffer:
@@ -145,12 +139,17 @@ def linspace_int(
     
     # assert out.size == npoints, temp is not None, a != b
 
-    with sb_float(npoints) as buff:
-        np.divide(SEQUENCE_UINT[:npoints], npoints, out=buff, dtype=FLOAT_DTYPE)  # interpolation
-        buff *= (b - a)  # Scale
-        buff += a  # min value
-        
-        out[:npoints] = buff  # copy to output, this will truncate integers
+    # with sb_float(npoints) as buff:
+
+    buff, buff_h = get_sb(npoints, ScratchBufferType.FLOAT)
+
+    np.divide(SEQUENCE_UINT[:npoints], npoints, out=buff, dtype=FLOAT_DTYPE)  # interpolation
+    buff *= (b - a)  # Scale
+    buff += a  # min value
+    
+    out[:npoints] = buff  # copy to output, this will truncate integers
+
+    free_sb(buff_h, ScratchBufferType.FLOAT)
 
     return npoints
 
@@ -176,10 +175,14 @@ def get_line(a: np.ndarray, b: np.ndarray, out_x: np.ndarray, out_y: np.ndarray)
 
 
 def draw_line(array: np.ndarray, a: np.ndarray, b: np.ndarray, color: np.ndarray):
-    with sb_int(SCRATCH_BUFFER_SIZE) as out_x, sb_int(SCRATCH_BUFFER_SIZE) as out_y:
-        npoints = get_line(a, b, out_x, out_y)
+    out_x, out_x_h = get_sb(SCRATCH_BUFFER_SIZE, ScratchBufferType.INT)
+    out_y, out_y_h = get_sb(SCRATCH_BUFFER_SIZE, ScratchBufferType.INT)
 
-        array[out_y[:npoints], out_x[:npoints], :] = color
+    npoints = get_line(a, b, out_x, out_y)
+    array[out_y[:npoints], out_x[:npoints], :] = color
+
+    free_sb(out_y_h)
+    free_sb(out_x_h)
 
 
 @njit
@@ -200,30 +203,47 @@ def draw_triangle(buff: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray,
     if c[1] < b[1]:
         b, c = c, b
 
+    xab_full, xab_full_h = get_sb(SCRATCH_BUFFER_SIZE, ScratchBufferType.INT)
+    xbc_full, xbc_full_h = get_sb(SCRATCH_BUFFER_SIZE, ScratchBufferType.INT)
+    xac_full, xac_full_h = get_sb(SCRATCH_BUFFER_SIZE, ScratchBufferType.INT)
+    xabc_full, xabc_full_h = get_sb(SCRATCH_BUFFER_SIZE, ScratchBufferType.INT)
 
-    with sb_int(SCRATCH_BUFFER_SIZE) as xab_full, sb_int(SCRATCH_BUFFER_SIZE) as xbc_full, sb_int(SCRATCH_BUFFER_SIZE) as xac_full, sb_int(SCRATCH_BUFFER_SIZE) as xabc_full:
-        npoints_xab = interpolate_x(a, b, out=xab_full)
-        npoints_xbc = interpolate_x(b, c, out=xbc_full)
-        npoints_xac = interpolate_x(a, c, out=xac_full)
+    npoints_xab = interpolate_x(a, b, out=xab_full)
+    npoints_xbc = interpolate_x(b, c, out=xbc_full)
+    npoints_xac = interpolate_x(a, c, out=xac_full)
 
-        xab = xab_full[:npoints_xab]
-        xbc = xbc_full[:npoints_xbc]
-        xac = xac_full[:npoints_xac]
-        xabc = xabc_full[:npoints_xac]
+    xab = xab_full[:npoints_xab]
+    xbc = xbc_full[:npoints_xbc]
+    xac = xac_full[:npoints_xac]
+    xabc = xabc_full[:npoints_xac]
 
-        np.concatenate([xab[:-1], xbc], out=xabc)
+    np.concatenate([xab[:-1], xbc], out=xabc)
 
-        midpoint = np.floor_divide(xabc.size, 2, dtype=UNSIGNED_INTEGER_DTYPE)
+    midpoint = np.floor_divide(xabc.size, 2, dtype=UNSIGNED_INTEGER_DTYPE)
 
-        if xac[midpoint] < xabc[midpoint]:
-            x_left = xac
-            x_right = xabc
+    if xac[midpoint] < xabc[midpoint]:
+        x_left = xac
+        x_right = xabc
 
-        else:
-            x_left = xabc
-            x_right = xac
+    else:
+        x_left = xabc
+        x_right = xac
 
-        triangle_blit(buff, x_left, x_right, a[1], c[1], color)
+    """
+    TODO KB:
+        This ended up being significantly slower, numpy mask blit operations are slow apparently
+    """
+    # ys = slice(a[1], c[1]+1)
+    # x_grid = (x_left[:, np.newaxis] <= BUFFER_MGRID_X[ys, 0:200]) & (BUFFER_MGRID_X[ys, 0:200] <= x_right[:, np.newaxis])
+    # buff[ys, 0:200][x_grid] = color
+
+    triangle_blit(buff, x_left, x_right, a[1], c[1], color)
+
+    free_sb(xabc_full_h, ScratchBufferType.INT)
+    free_sb(xac_full_h, ScratchBufferType.INT)
+    free_sb(xbc_full_h, ScratchBufferType.INT)
+    free_sb(xab_full_h, ScratchBufferType.INT)
+
     
 
 
