@@ -1,0 +1,17 @@
+import numpy as np
+
+
+BYTE_DTYPE = np.uint8
+INTEGER_DTYPE = np.int16
+UNSIGNED_INTEGER_DTYPE = np.uint16
+FLOAT_DTYPE = np.float32
+MAX_INT = np.iinfo(INTEGER_DTYPE).max
+MAX_UINT = np.iinfo(UNSIGNED_INTEGER_DTYPE).max
+
+
+# only 32bit, 24bit no alpha, or 8bit pallete
+SURFACE_MODE = "RGBA"
+SCREEN_WIDTH = 320
+SCREEN_HEIGHT = 240
+NUM_SCRATCH_BUFFERS = 32
+SCRATCH_BUFFER_SIZE = MAX_UINT
