@@ -37,21 +37,25 @@ def main(args):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 gpu.clear(gpu_screen, gpu.DEFAULT_COLOR)
 
-        for i in range(1000):
-            gpu.direct.draw_triangle(gpu_screen.array, np.array([0,0]), np.array([0, 120]), np.array([200, 120]), gpu.screen.Color(255, 0, 0).array)
+
+        num_tris = 600
+        xs = np.random.randint(gpu.screen.SCREEN_WIDTH // 2, size=3*num_tris)
+        ys = np.random.randint(gpu.screen.SCREEN_HEIGHT // 2, size=3*num_tris)
+        for i in range(num_tris):
+            gpu.direct.draw_triangle(
+                gpu_screen.array, np.array([xs[i], ys[i]]), np.array([xs[i+1], ys[i+1]]), np.array([xs[i+2], ys[i+2]]), 
+                gpu.screen.Color(255 * i/num_tris, 0, 128 * i/num_tris).array)
 
         # Do logical updates here.
         # ...
 
-        screen.fill("purple")  # Fill the display with a solid color
+        
 
         pygame.transform.scale2x(buff_surface_raw.convert_alpha(), buff_target)
+        gpu.direct.clear(gpu.screen.SCREEN, gpu.screen.Color(0, 0, 0))
         screen.blit(buff_target, (0, 0))
         surf = font.render(f"FPS: {clock.get_fps()}", False, (0, 0, 0))
         screen.blit(surf, (0, 0))
 
-        # Render the graphics here.
-        # ...
-
         pygame.display.flip()  # Refresh on-screen display
-        clock.tick(60)         # wait until next frame (at 60 FPS)
+        clock.tick(30)         # wait until next frame (at 30 FPS)
