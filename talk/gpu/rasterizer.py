@@ -90,9 +90,22 @@ def rotation(roll: float, pitch: float, yaw: float, out=Optional[np.ndarray]) ->
     return out
 
 
-def project(f: FLOAT_DTYPE) -> np.ndarray:
+def projection(
+        field_of_view_x: FLOAT_DTYPE,
+        aspect_ratio: FLOAT_DTYPE,
+        hither: FLOAT_DTYPE) -> np.ndarray:
+
+    right = np.tan(np.deg2rad(field_of_view_x/2)) * hither
+    top = right / aspect_ratio
+
     return np.array([
-        f, 0, SCREEN_HORIZONTAL_CENTER, 0,
-        0, f, SCREEN_VERTICAL_CENTER,   0,
-        0, 0, 1,                        0
-    ], dtype=FLOAT_DTYPE).reshape(3, 4)
+        hither/right, 0,          0,  0,
+        0,            hither/top, 0,  0,
+        0,            0,          -1, -2*hither,
+        0,            0,          -1, 0
+    ], dtype=FLOAT_DTYPE).reshape(4, 4)
+
+
+def to_screen(p: np.ndarray) -> np.ndarray:
+    flip = np.array([1, -1])
+    return (flip*p[0:2] / p[3] * SCREEN_HALF_SIZE + SCREEN_HALF_SIZE).astype(int)

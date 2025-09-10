@@ -27,6 +27,19 @@ def main(args):
 
     clock = pygame.time.Clock()
 
+    projection = gpu.rasterizer.projection(90, gpu.SCREEN_ASPECT_RATIO, 0.1)  # What should f be? Something about view angle?
+    x = 0
+    y = 0
+    z = -0.5
+
+    a = np.array([x - 0.3, y, -0.5, 1])
+    b = np.array([x + 0.3, y, -0.5, 1])
+    c = np.array([x, y + 0.3, z, 1])
+
+    ap = projection @ a
+    bp = projection @ b
+    cp = projection @ c
+
     while True:
         # Process player inputs.
         for event in pygame.event.get():
@@ -35,16 +48,45 @@ def main(args):
                 raise SystemExit
             
             if event.type == pygame.MOUSEBUTTONDOWN:
-                gpu.clear(gpu_screen, gpu.DEFAULT_COLOR)
+                pass
 
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_a:
+                    x -= 0.1
+                
+                if event.key == pygame.K_d:
+                    x += 0.1
 
-        num_tris = 600
-        xs = np.random.randint(gpu.screen.SCREEN_WIDTH // 2, size=3*num_tris)
-        ys = np.random.randint(gpu.screen.SCREEN_HEIGHT // 2, size=3*num_tris)
-        for i in range(num_tris):
-            gpu.direct.draw_triangle(
-                gpu_screen.array, np.array([xs[i], ys[i]]), np.array([xs[i+1], ys[i+1]]), np.array([xs[i+2], ys[i+2]]), 
-                gpu.screen.Color(255 * i/num_tris, 0, 128 * i/num_tris).array)
+                if event.key == pygame.K_w:
+                    z -= 0.1
+                
+                if event.key == pygame.K_s:
+                    z += 0.1
+
+                
+                a = np.array([x - 0.3, y, -0.5, 1])
+                b = np.array([x + 0.3, y, -0.5, 1])
+                c = np.array([x, y + 0.3, z, 1])
+
+                ap = projection @ a
+                bp = projection @ b
+                cp = projection @ c
+
+                print(cp)
+                print(gpu.rasterizer.to_screen(cp))
+
+        gpu.direct.draw_triangle(
+            gpu_screen.array, gpu.rasterizer.to_screen(ap), 
+            gpu.rasterizer.to_screen(bp), gpu.rasterizer.to_screen(cp), 
+            gpu.screen.Color(255, 0, 128).array)
+
+        # num_tris = 600
+        # xs = np.random.randint(gpu.screen.SCREEN_WIDTH // 2, size=3*num_tris)
+        # ys = np.random.randint(gpu.screen.SCREEN_HEIGHT // 2, size=3*num_tris)
+        # for i in range(num_tris):
+        #     gpu.direct.draw_triangle(
+        #         gpu_screen.array, np.array([xs[i], ys[i]]), np.array([xs[i+1], ys[i+1]]), np.array([xs[i+2], ys[i+2]]), 
+        #         gpu.screen.Color(255 * i/num_tris, 0, 128 * i/num_tris).array)
 
         # Do logical updates here.
         # ...

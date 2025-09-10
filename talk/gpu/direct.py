@@ -79,6 +79,25 @@ def draw_triangle(buff: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray,
         x_left = xabc
         x_right = xac
 
+    x_left = np.clip(x_left, 0, SCREEN_WIDTH)
+    x_right = np.clip(x_right, 0, SCREEN_WIDTH)
+
+    y_top = a[1]
+    y_bottom = c[1]
+
+    if a[1] < 0:
+        y_top = 0
+        x_left = x_left[-a[1]:]
+        x_right = x_right[-a[1]:]
+
+    if c[1] > SCREEN_HEIGHT:
+        y_bottom = SCREEN_HEIGHT
+        x_left = x_left[:c[1]]
+        x_right = x_right[:c[1]]
+
+    # y_top = np.clip(a[1], 0, SCREEN_HEIGHT)
+    # y_bottom = np.clip(c[1], 0, SCREEN_HEIGHT)
+
     """
     TODO KB:
         This ended up being significantly slower, numpy mask blit operations are slow apparently
@@ -87,7 +106,7 @@ def draw_triangle(buff: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray,
     # x_grid = (x_left[:, np.newaxis] <= BUFFER_MGRID_X[ys, 0:200]) & (BUFFER_MGRID_X[ys, 0:200] <= x_right[:, np.newaxis])
     # buff[ys, 0:200][x_grid] = color
 
-    triangle_blit(buff, x_left, x_right, a[1], c[1], color)
+    triangle_blit(buff, x_left, x_right, y_top, y_bottom, color)
 
     mem.free_sb(xabc_full_h, mem.SbType.INT)
     mem.free_sb(xac_full_h, mem.SbType.INT)
