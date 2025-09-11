@@ -109,3 +109,11 @@ def projection(
 def to_screen(p: np.ndarray) -> np.ndarray:
     flip = np.array([1, -1])
     return (flip*p[0:2] / p[3] * SCREEN_HALF_SIZE + SCREEN_HALF_SIZE).astype(int)
+
+
+def is_in_clip(ap: np.ndarray, bp: np.ndarray, cp: np.ndarray) -> bool:
+    return (
+        -ap[3] <= ap[0] <= ap[3] and -ap[3] <= ap[1] <= ap[3] and ap[2] > 0 and
+        -bp[3] <= bp[0] <= bp[3] and -bp[3] <= bp[1] <= bp[3] and bp[2] > 0 and
+        -cp[3] <= cp[0] <= cp[3] and -cp[3] <= cp[1] <= cp[3] and cp[2] > 0 
+    )

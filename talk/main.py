@@ -4,6 +4,10 @@ import argparse
 
 import pygame
 import numpy as np
+import trimesh
+
+
+MESH_FILE = "mesh/kirby.glb"
 
 
 def parse_args():
@@ -17,6 +21,14 @@ def main(args):
 
     screen = pygame.display.set_mode((640, 480))
 
+    mesh = trimesh.load(MESH_FILE, force='mesh')
+    colors = np.array(mesh.visual.vertex_colors, gpu.BYTE_DTYPE)
+    vertices = np.array(mesh.vertices, dtype=gpu.FLOAT_DTYPE)
+    vertices = np.column_stack([vertices, np.ones(len(vertices), dtype=gpu.FLOAT_DTYPE)])
+    faces = np.array(mesh.faces, dtype=gpu.UNSIGNED_INTEGER_DTYPE)
+
+    world_matrix = gpu.rasterizer.translate(np.array([0, -0.15, -0.5], dtype=gpu.FLOAT_DTYPE))
+
     gpu_screen = gpu.screen.SCREEN
     
     gpu.direct.draw_rect(gpu_screen, 16, 32, 64, 128, gpu.screen.Color(0x00, 0x00, 0x00))
@@ -26,8 +38,9 @@ def main(args):
     font = pygame.font.SysFont("Georgia", 16)
 
     clock = pygame.time.Clock()
+    spin_angle = 0.0
 
-    projection = gpu.rasterizer.projection(90, gpu.SCREEN_ASPECT_RATIO, 0.1)  # What should f be? Something about view angle?
+    projection = gpu.rasterizer.projection(90, gpu.SCREEN_ASPECT_RATIO, 0.05)  # What should f be? Something about view angle?
     x = 0
     y = 0
     z = -0.5
@@ -40,6 +53,8 @@ def main(args):
     bp = projection @ b
     cp = projection @ c
 
+    rotation_matrix = np.eye(4, dtype=gpu.FLOAT_DTYPE)
+
     while True:
         # Process player inputs.
         for event in pygame.event.get():
@@ -50,35 +65,27 @@ def main(args):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pass
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_a:
-                    x -= 0.1
-                
-                if event.key == pygame.K_d:
-                    x += 0.1
-
-                if event.key == pygame.K_w:
-                    z -= 0.1
-                
-                if event.key == pygame.K_s:
-                    z += 0.1
-
-                
-                a = np.array([x - 0.3, y, -0.5, 1])
-                b = np.array([x + 0.3, y, -0.5, 1])
-                c = np.array([x, y + 0.3, z, 1])
-
                 ap = projection @ a
                 bp = projection @ b
                 cp = projection @ c
 
-                print(cp)
-                print(gpu.rasterizer.to_screen(cp))
+        spin_angle += 5
+        gpu.rasterizer.rotation_y(np.deg2rad(spin_angle), out=rotation_matrix)
+        triangles = vertices[faces]
+        triangle_colors = colors[faces]
 
-        gpu.direct.draw_triangle(
-            gpu_screen.array, gpu.rasterizer.to_screen(ap), 
-            gpu.rasterizer.to_screen(bp), gpu.rasterizer.to_screen(cp), 
-            gpu.screen.Color(255, 0, 128).array)
+        # TODO: Figure out how to broadcast this properly
+        for (a, b, c), tcolors in zip(triangles, triangle_colors):
+            color = np.average(tcolors, axis=0)
+            ap = projection @ world_matrix @ rotation_matrix @ a
+            bp = projection @ world_matrix @ rotation_matrix @ b
+            cp = projection @ world_matrix @ rotation_matrix @ c
+
+            if gpu.rasterizer.is_in_clip(ap, bp, cp):
+                gpu.direct.draw_triangle(
+                    gpu_screen.array, gpu.rasterizer.to_screen(ap), 
+                    gpu.rasterizer.to_screen(bp), gpu.rasterizer.to_screen(cp), 
+                    color)
 
         # num_tris = 600
         # xs = np.random.randint(gpu.screen.SCREEN_WIDTH // 2, size=3*num_tris)
@@ -94,7 +101,7 @@ def main(args):
         
 
         pygame.transform.scale2x(buff_surface_raw.convert_alpha(), buff_target)
-        gpu.direct.clear(gpu.screen.SCREEN, gpu.screen.Color(0, 0, 0))
+        gpu.direct.clear(gpu.screen.SCREEN, gpu.screen.Color(255, 255, 255))
         screen.blit(buff_target, (0, 0))
         surf = font.render(f"FPS: {clock.get_fps()}", False, (0, 0, 0))
         screen.blit(surf, (0, 0))
