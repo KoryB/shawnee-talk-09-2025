@@ -1,7 +1,7 @@
 from .constants import *
 
 from enum import Enum
-from typing import Union
+from typing import Tuple, Union
 
 import numpy as np
 
@@ -40,7 +40,7 @@ BUFFER_MGRID_Y, BUFFER_MGRID_X = np.mgrid[:SCREEN_HEIGHT, :SCREEN_WIDTH].astype(
 SCREEN_BUFFER = np.zeros((SCREEN_HEIGHT, SCREEN_WIDTH, 4), dtype=BYTE_DTYPE)
 DEPTH_BUFFER = np.ones((SCREEN_HEIGHT, SCREEN_WIDTH), dtype=FLOAT_DTYPE)
 
-def get_sb(size: UNSIGNED_INTEGER_DTYPE, type: SbType) -> Union[np.ndarray, UNSIGNED_INTEGER_DTYPE]:
+def get_sb(size: UNSIGNED_INTEGER_DTYPE, type: SbType) -> Tuple[np.ndarray, UNSIGNED_INTEGER_DTYPE]:
     """
     We take some fps hit with this overhead, but the consistency is nice. Keep for now.
     """

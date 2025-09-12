@@ -17,7 +17,8 @@ class Mesh:
 
         self.transformed_vertices = np.zeros_like(vertices)
 
-    def render(self, projection: np.ndarray):
+    def render(self, projection: np.ndarray) -> INTEGER_DTYPE:
+        num_tris = 0
         translation = rasterizer.translate(self.position)
         rotation = rasterizer.rotation(self.rotation[0], self.rotation[1], self.rotation[2])
         # rotation = rasterizer.rotation_y(self.rotation[1])
@@ -27,6 +28,12 @@ class Mesh:
         triangles = self.vertices[self.faces]
         triangle_colors = self.colors[self.faces]
 
+        xab_full, xab_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
+        xbc_full, xbc_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
+        xac_full, xac_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
+        xabc_full, xabc_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
+        bary, bary_h = mem.get_sb(3, mem.SbType.FLOAT)
+
         # TODO: Figure out how to broadcast this properly
         for (a, b, c), tcolors in zip(triangles, triangle_colors):
             ap = transform @ a
@@ -34,6 +41,17 @@ class Mesh:
             cp = transform @ c
 
             if rasterizer.is_in_clip(ap, bp, cp):
+                num_tris += 1
                 direct.draw_triangle(
                     rasterizer.to_screen(ap), rasterizer.to_screen(bp), 
-                    rasterizer.to_screen(cp), tcolors)
+                    rasterizer.to_screen(cp), tcolors, 
+                    xab_full, xbc_full, xac_full,
+                    xabc_full, bary)
+                
+        mem.free_sb(bary_h, mem.SbType.FLOAT)
+        mem.free_sb(xabc_full_h, mem.SbType.INT)
+        mem.free_sb(xac_full_h, mem.SbType.INT)
+        mem.free_sb(xbc_full_h, mem.SbType.INT)
+        mem.free_sb(xab_full_h, mem.SbType.INT)
+                
+        return num_tris

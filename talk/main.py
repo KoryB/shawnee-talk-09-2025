@@ -44,10 +44,12 @@ def main(args):
                 y = [-0.7, 0.0, 0.7][r]
 
                 kirby = gpu.Mesh(vertices, faces, colors)
+                kirby.movement_angle = 0.0
                 kirby.rotation_speed = r + c + 2
                 kirby.rotation_angle = (1 + r ^ c) % 2
 
-                kirby.position = np.array([x, y, -0.8 - np.abs(x*0.5) - np.abs(y*0.5)], dtype=gpu.FLOAT_DTYPE)
+                kirby.original_position = np.array([x, y, -0.8 - np.abs(x*0.5) - np.abs(y*0.5)], dtype=gpu.FLOAT_DTYPE)
+                kirby.position = np.copy(kirby.original_position)
 
                 kirbies.append(kirby)
 
@@ -65,21 +67,28 @@ def main(args):
 
         # Update game
         for kirby in kirbies:
+            kirby.movement_angle += np.deg2rad(kirby.rotation_speed)
+            kirby.position = kirby.original_position + np.array([
+                0.1*np.cos(kirby.movement_angle),
+                0.1*np.sin(kirby.movement_angle),
+                0.1*np.sin(kirby.movement_angle)*np.cos(kirby.movement_angle),
+            ])
             kirby.rotation[kirby.rotation_angle] += np.deg2rad(kirby.rotation_speed)
+            kirby.rotation[(kirby.rotation_angle+1) % 3] += np.deg2rad(kirby.rotation_speed)*2
 
+        tri_count = 0
         # Render game objects
         for kirby in kirbies:
-            kirby.render(projection)
+            tri_count += kirby.render(projection)
 
         # Render to the screen
         pygame.transform.scale2x(buff_surface_raw.convert_alpha(), buff_target)
         gpu.direct.clear()
         screen.blit(buff_target, (0, 0))
         surf = font.render(f"FPS: {clock.get_fps()}", False, (255, 255, 255))
-        tri_count = sum(len(k.vertices) for k in kirbies)
         surf_tri_count = font.render(f"Triangle Count: {tri_count}", False, (255, 255, 255))
         screen.blit(surf, (0, 0))
         screen.blit(surf_tri_count, (0, 24))
 
         pygame.display.flip()  # Refresh on-screen display
-        clock.tick(20)         # wait until next frame (at 30 FPS)
+        clock.tick()         # wait until next frame (at 30 FPS)

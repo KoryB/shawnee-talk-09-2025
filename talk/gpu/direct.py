@@ -1,3 +1,4 @@
+from typing import Optional
 from .constants import *
 from . import gpu_math as gpum
 from . import memory as mem
@@ -35,7 +36,25 @@ def get_line(a: np.ndarray, b: np.ndarray, out_x: np.ndarray, out_y: np.ndarray)
 #     mem.mem.free_sb(out_x_h)
 
 
-def draw_triangle(a: np.ndarray, b: np.ndarray, c: np.ndarray, colors: np.ndarray):
+def draw_triangle(
+        a: np.ndarray, b: np.ndarray, c: np.ndarray, colors: np.ndarray,
+        xab_full: Optional[np.ndarray], xbc_full: Optional[np.ndarray],
+        xac_full: Optional[np.ndarray], xabc_full: Optional[np.ndarray],
+        bary: Optional[np.ndarray]):
+    
+    """
+    Either all buffers or none should be set
+    """
+
+    should_do_allocation = xab_full is None
+
+    if should_do_allocation:
+        xab_full, xab_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
+        xbc_full, xbc_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
+        xac_full, xac_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
+        xabc_full, xabc_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
+        bary, bary_h = mem.get_sb(3, mem.SbType.FLOAT)
+
     # Sort point y values
     a_orig = np.copy(a)
     b_orig = np.copy(b)
@@ -53,12 +72,6 @@ def draw_triangle(a: np.ndarray, b: np.ndarray, c: np.ndarray, colors: np.ndarra
     ai = np.round(a).astype(INTEGER_DTYPE)
     bi = np.round(b).astype(INTEGER_DTYPE)
     ci = np.round(c).astype(INTEGER_DTYPE)
-
-    xab_full, xab_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-    xbc_full, xbc_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-    xac_full, xac_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-    xabc_full, xabc_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-    bary, bary_h = mem.get_sb(3, mem.SbType.FLOAT)
 
     npoints_xab = gpum.interpolate_x(ai, bi, out=xab_full)
     npoints_xbc = gpum.interpolate_x(bi, ci, out=xbc_full)
@@ -114,11 +127,12 @@ def draw_triangle(a: np.ndarray, b: np.ndarray, c: np.ndarray, colors: np.ndarra
         bary, colors, 
         SCREEN.color_buffer, SCREEN.depth_buffer)
 
-    mem.free_sb(bary_h, mem.SbType.FLOAT)
-    mem.free_sb(xabc_full_h, mem.SbType.INT)
-    mem.free_sb(xac_full_h, mem.SbType.INT)
-    mem.free_sb(xbc_full_h, mem.SbType.INT)
-    mem.free_sb(xab_full_h, mem.SbType.INT)
+    if should_do_allocation:
+        mem.free_sb(bary_h, mem.SbType.FLOAT)
+        mem.free_sb(xabc_full_h, mem.SbType.INT)
+        mem.free_sb(xac_full_h, mem.SbType.INT)
+        mem.free_sb(xbc_full_h, mem.SbType.INT)
+        mem.free_sb(xab_full_h, mem.SbType.INT)
 
 
 # Numba stuff
