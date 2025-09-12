@@ -80,6 +80,7 @@ def draw_triangle(
 
 
 # Numba stuff
+@njit
 def triangle_blit(
         x_left: np.ndarray, x_right: np.ndarray, y0: INTEGER_DTYPE, y1: INTEGER_DTYPE, 
         a: np.ndarray, b: np.ndarray, c: np.ndarray, 
@@ -104,7 +105,7 @@ def triangle_blit(
                     # color_buffer[y, x, 3] = 255
                     depth_buffer[y, x] = d
     
-
+@njit
 def compute_barycentric_coordinates(p: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray, out=np.ndarray) -> np.ndarray:
     v0 = b - a
     v1 = c - a
