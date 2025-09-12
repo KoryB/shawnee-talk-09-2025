@@ -9,3 +9,8 @@
 #         b[2] <= depth_buffer[int(np.round(b[0])), int(np.round(b[1]))] and
 #         c[2] <= depth_buffer[int(np.round(c[0])), int(np.round(c[1]))]
 #     )
+
+
+# pygame.transform.scale2x(buff_surface_raw.convert_alpha(), buff_target)
+
+# screen.blit(buff_target, (0, 0))
