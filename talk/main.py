@@ -91,4 +91,4 @@ def main(args):
         screen.blit(surf_tri_count, (0, 24))
 
         pygame.display.flip()  # Refresh on-screen display
-        clock.tick()         # wait until next frame (at 30 FPS)
+        clock.tick(30)         # wait until next frame (at 30 FPS)
