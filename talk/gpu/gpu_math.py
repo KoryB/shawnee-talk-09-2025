@@ -22,7 +22,7 @@ def linspace_int(
 
     buff, buff_h = mem.get_sb(npoints, mem.SbType.FLOAT)
 
-    np.divide(mem.SEQUENCE_UINT[:npoints], npoints, out=buff, dtype=FLOAT_DTYPE)  # interpolation
+    np.divide(mem.SEQUENCE_INT[:npoints], npoints, out=buff, dtype=FLOAT_DTYPE)  # interpolation
     buff *= (b - a)  # Scale
     buff += a  # min value
     
@@ -33,13 +33,13 @@ def linspace_int(
     return npoints
 
 
-def interpolate_y(a: np.ndarray, b: np.ndarray, out: np.ndarray) -> np.ndarray:
+def interpolate_y(a: np.ndarray, b: np.ndarray, out: np.ndarray=None) -> np.ndarray:
     npoints = b[0] - a[0] + 1
 
-    return linspace_int(a[1], b[1], npoints, out=out)
+    return np.linspace(a[1], b[1], npoints, dtype=INTEGER_DTYPE)
 
 
-def interpolate_x(a: np.ndarray, b: np.ndarray, out: np.ndarray) -> np.ndarray:
+def interpolate_x(a: np.ndarray, b: np.ndarray, out: np.ndarray=None) -> np.ndarray:
     npoints = b[1] - a[1] + 1
 
-    return linspace_int(a[0], b[0], npoints, out=out)
+    return np.linspace(a[0], b[0], npoints, dtype=INTEGER_DTYPE)
