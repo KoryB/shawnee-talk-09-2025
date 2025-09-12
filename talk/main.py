@@ -18,16 +18,17 @@ def parse_args():
 
 def main(args):
     pygame.init()
-
+    np.random.seed(1234)
     screen = pygame.display.set_mode((640, 480))
 
     mesh = trimesh.load(MESH_FILE, force='mesh')
     colors = np.array(mesh.visual.vertex_colors, gpu.BYTE_DTYPE)
+
     vertices = np.array(mesh.vertices, dtype=gpu.FLOAT_DTYPE)
     vertices = np.column_stack([vertices, np.ones(len(vertices), dtype=gpu.FLOAT_DTYPE)])
     faces = np.array(mesh.faces, dtype=gpu.UNSIGNED_INTEGER_DTYPE)
 
-    world_matrix = gpu.rasterizer.translate(np.array([0, -0.15, -0.5], dtype=gpu.FLOAT_DTYPE))
+    world_matrix = gpu.rasterizer.translate(np.array([0, 0, -0.5], dtype=gpu.FLOAT_DTYPE))
 
     gpu_screen = gpu.screen.SCREEN
     
@@ -40,7 +41,7 @@ def main(args):
     clock = pygame.time.Clock()
     spin_angle = 0.0
 
-    projection = gpu.rasterizer.projection(90, gpu.SCREEN_ASPECT_RATIO, 0.05)  # What should f be? Something about view angle?
+    projection = gpu.rasterizer.projection(90, gpu.SCREEN_ASPECT_RATIO, 0.1)  # What should f be? Something about view angle?
     x = 0
     y = 0
     z = -0.5
@@ -62,15 +63,14 @@ def main(args):
                 pygame.quit()
                 raise SystemExit
             
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                pass
+            if event.type == pygame.MOUSEWHEEL:
+                if event.y > 0:
+                    spin_angle += 5
 
-                ap = projection @ a
-                bp = projection @ b
-                cp = projection @ c
+                else:
+                    spin_angle -= 5
 
-        spin_angle += 5
-        gpu.rasterizer.rotation_y(np.deg2rad(spin_angle), out=rotation_matrix)
+        gpu.rasterizer.rotation_z(np.deg2rad(spin_angle), out=rotation_matrix)
         triangles = vertices[faces]
         triangle_colors = colors[faces]
 
@@ -80,11 +80,12 @@ def main(args):
             bp = projection @ world_matrix @ rotation_matrix @ b
             cp = projection @ world_matrix @ rotation_matrix @ c
 
-            if gpu.rasterizer.is_in_clip(ap, bp, cp):
+            if gpu.rasterizer.is_in_clip(ap, bp, cp, gpu.memory.DEPTH_BUFFER):
                 gpu.direct.draw_triangle(
                     gpu_screen.color_buffer, gpu.rasterizer.to_screen(ap), 
                     gpu.rasterizer.to_screen(bp), gpu.rasterizer.to_screen(cp), 
                     tcolors)
+                
 
         # num_tris = 600
         # xs = np.random.randint(gpu.screen.SCREEN_WIDTH // 2, size=3*num_tris)
@@ -99,6 +100,7 @@ def main(args):
 
         
 
+        # buff_target = buff_surface_raw.convert_alpha()
         pygame.transform.scale2x(buff_surface_raw.convert_alpha(), buff_target)
         gpu.direct.clear(gpu.screen.SCREEN, gpu.screen.Color(64, 64, 64))
         screen.blit(buff_target, (0, 0))

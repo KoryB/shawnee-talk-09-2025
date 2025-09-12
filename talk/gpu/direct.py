@@ -39,7 +39,6 @@ def draw_line(array: np.ndarray, a: np.ndarray, b: np.ndarray, color: np.ndarray
 def triangle_blit(
         x_left: np.ndarray, x_right: np.ndarray, y0: INTEGER_DTYPE, y1: INTEGER_DTYPE, 
         a: np.ndarray, b: np.ndarray, c: np.ndarray, 
-        ai: np.ndarray, bi: np.ndarray, ci: np.ndarray,
         bary_temp: np.ndarray, colors: np.ndarray, color_buffer: np.ndarray, depth_buffer: np.ndarray):
     for y in range(y0, y1 + 1):
         i = y - y0
@@ -47,18 +46,27 @@ def triangle_blit(
         for x in range(x_left[i], x_right[i] + 1):
             p = np.array([x, y], dtype=INTEGER_DTYPE)
 
-            compute_barycentric_coordinates(p, a[0:2], b[0:2], c[0:2], bary_temp)
+            compute_barycentric_coordinates(p, c[0:2], a[0:2], b[0:2], bary_temp)
 
-            if bary_temp[0] >= 0.0:
+            if bary_temp[0] > -1:
                 d = bary_temp[0]*a[2] + bary_temp[1]*b[2] + bary_temp[2]*c[2]
 
                 if d < depth_buffer[y, x]:
                     color_buffer[y, x, :] = bary_temp[0]*colors[0] + bary_temp[1]*colors[1] + bary_temp[2]*colors[2]
+                    # TODO KB: Mention this bug and solving it
+                    # color_buffer[y, x, 0] = bary_temp[0]*255
+                    # color_buffer[y, x, 1] = bary_temp[1]*255
+                    # color_buffer[y, x, 2] = bary_temp[2]*255
+                    # color_buffer[y, x, 3] = 255
                     depth_buffer[y, x] = d
 
 
 def draw_triangle(buff: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray, colors: np.ndarray):
     # Sort point y values
+    a_orig = np.copy(a)
+    b_orig = np.copy(b)
+    c_orig = np.copy(c)
+
     if b[1] < a[1]:
         a, b = b, a
 
@@ -68,9 +76,9 @@ def draw_triangle(buff: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray,
     if c[1] < b[1]:
         b, c = c, b
 
-    ai = a.astype(INTEGER_DTYPE)
-    bi = b.astype(INTEGER_DTYPE)
-    ci = c.astype(INTEGER_DTYPE)
+    ai = np.round(a).astype(INTEGER_DTYPE)
+    bi = np.round(b).astype(INTEGER_DTYPE)
+    ci = np.round(c).astype(INTEGER_DTYPE)
 
     xab_full, xab_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
     xbc_full, xbc_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
@@ -128,8 +136,7 @@ def draw_triangle(buff: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray,
 
     triangle_blit(
         x_left, x_right, y_top, y_bottom, 
-        a, b, c, 
-        ai, bi, ci, 
+        a_orig, b_orig, c_orig, 
         bary, colors, 
         SCREEN.color_buffer, SCREEN.depth_buffer)
 

@@ -116,9 +116,12 @@ def to_screen(p: np.ndarray) -> np.ndarray:
 
 
 @njit
-def is_in_clip(ap: np.ndarray, bp: np.ndarray, cp: np.ndarray) -> bool:
+def is_in_clip(ap: np.ndarray, bp: np.ndarray, cp: np.ndarray, depth_buffer: np.ndarray) -> bool:
     return (
         -ap[3] <= ap[0] <= ap[3] and -ap[3] <= ap[1] <= ap[3] and ap[2] > 0 and
         -bp[3] <= bp[0] <= bp[3] and -bp[3] <= bp[1] <= bp[3] and bp[2] > 0 and
-        -cp[3] <= cp[0] <= cp[3] and -cp[3] <= cp[1] <= cp[3] and cp[2] > 0 
+        -cp[3] <= cp[0] <= cp[3] and -cp[3] <= cp[1] <= cp[3] and cp[2] > 0 and
+        ap[2] <= depth_buffer[int(np.round(ap[0])), int(np.round(ap[1]))] and
+        bp[2] <= depth_buffer[int(np.round(bp[0])), int(np.round(bp[1]))] and
+        cp[2] <= depth_buffer[int(np.round(cp[0])), int(np.round(cp[1]))]
     )
