@@ -25,16 +25,17 @@ DEFAULT_COLOR = Color(255, 0, 255)
 
 
 class Screen:
-    def __init__(self, array):
-        self.array = array
+    def __init__(self, color_buffer, depth_buffer):
+        self.color_buffer = color_buffer
+        self.depth_buffer = depth_buffer
 
     
     def get_surface(self):
-        h, w, _ = self.array.shape
+        h, w, _ = self.color_buffer.shape
 
-        surf = pygame.image.frombuffer(self.array.data, (w, h), SURFACE_MODE)
+        surf = pygame.image.frombuffer(self.color_buffer.data, (w, h), SURFACE_MODE)
 
         return surf
 
-SCREEN = Screen(mem.SCREEN_BUFFER)
+SCREEN = Screen(mem.SCREEN_BUFFER, mem.DEPTH_BUFFER)
 

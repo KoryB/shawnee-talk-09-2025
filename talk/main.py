@@ -76,16 +76,15 @@ def main(args):
 
         # TODO: Figure out how to broadcast this properly
         for (a, b, c), tcolors in zip(triangles, triangle_colors):
-            color = np.average(tcolors, axis=0)
             ap = projection @ world_matrix @ rotation_matrix @ a
             bp = projection @ world_matrix @ rotation_matrix @ b
             cp = projection @ world_matrix @ rotation_matrix @ c
 
             if gpu.rasterizer.is_in_clip(ap, bp, cp):
                 gpu.direct.draw_triangle(
-                    gpu_screen.array, gpu.rasterizer.to_screen(ap), 
+                    gpu_screen.color_buffer, gpu.rasterizer.to_screen(ap), 
                     gpu.rasterizer.to_screen(bp), gpu.rasterizer.to_screen(cp), 
-                    color)
+                    tcolors)
 
         # num_tris = 600
         # xs = np.random.randint(gpu.screen.SCREEN_WIDTH // 2, size=3*num_tris)
@@ -101,7 +100,7 @@ def main(args):
         
 
         pygame.transform.scale2x(buff_surface_raw.convert_alpha(), buff_target)
-        gpu.direct.clear(gpu.screen.SCREEN, gpu.screen.Color(255, 255, 255))
+        gpu.direct.clear(gpu.screen.SCREEN, gpu.screen.Color(64, 64, 64))
         screen.blit(buff_target, (0, 0))
         surf = font.render(f"FPS: {clock.get_fps()}", False, (0, 0, 0))
         screen.blit(surf, (0, 0))

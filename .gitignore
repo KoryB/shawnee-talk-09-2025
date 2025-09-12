@@ -1,3 +1,6 @@
+# blender
+*.blend1
+
 # profiles
 profile*.txt
 

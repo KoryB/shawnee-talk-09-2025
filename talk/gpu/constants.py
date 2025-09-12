@@ -2,11 +2,13 @@ import numpy as np
 
 
 BYTE_DTYPE = np.uint8
-INTEGER_DTYPE = np.int16
-UNSIGNED_INTEGER_DTYPE = np.uint16
+INTEGER_DTYPE = np.int32
+UNSIGNED_INTEGER_DTYPE = np.uint32
 FLOAT_DTYPE = np.float32
-MAX_INT = np.iinfo(INTEGER_DTYPE).max
-MAX_UINT = np.iinfo(UNSIGNED_INTEGER_DTYPE).max
+
+# For our system these are max, however they cause overflow if the actual dtype is this small
+MAX_INT = np.iinfo(np.int16).max
+MAX_UINT = np.iinfo(np.uint16).max
 
 
 # only 32bit, 24bit no alpha, or 8bit pallete
@@ -20,4 +22,4 @@ SCRATCH_BUFFER_SIZE = MAX_UINT
 SCREEN_HALF_WIDTH = SCREEN_WIDTH // 2
 SCREEN_HALF_HEIGHT = SCREEN_HEIGHT // 2
 
-SCREEN_HALF_SIZE = np.array([SCREEN_HALF_WIDTH, SCREEN_HALF_HEIGHT])
+SCREEN_HALF_SIZE = np.array([SCREEN_HALF_WIDTH, SCREEN_HALF_HEIGHT], dtype=INTEGER_DTYPE)

@@ -5,6 +5,7 @@ from typing import Union, Optional
 
 import numpy as np
 import scipy.spatial.transform as sct
+from numba import njit
 
 """
 We assume column vectors, math
@@ -107,10 +108,14 @@ def projection(
 
 
 def to_screen(p: np.ndarray) -> np.ndarray:
-    flip = np.array([1, -1])
-    return (flip*p[0:2] / p[3] * SCREEN_HALF_SIZE + SCREEN_HALF_SIZE).astype(int)
+    flip = np.array([1, -1, 1])
+    p = flip*p[0:3] / p[3]
+    p[0:2] = p[0:2]*SCREEN_HALF_SIZE + SCREEN_HALF_SIZE
+
+    return p
 
 
+@njit
 def is_in_clip(ap: np.ndarray, bp: np.ndarray, cp: np.ndarray) -> bool:
     return (
         -ap[3] <= ap[0] <= ap[3] and -ap[3] <= ap[1] <= ap[3] and ap[2] > 0 and
