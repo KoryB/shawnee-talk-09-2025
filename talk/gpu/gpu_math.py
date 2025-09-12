@@ -1,36 +1,7 @@
 from .constants import *
 from . import memory as mem
 
-from typing import Tuple, Union
-
-
-def get_grid(min: np.ndarray, max: np.ndarray) -> np.ndarray:
-    return np.mgrid[min[0]:max[0], min[1]:max[1]].reshape(2,-1).T
-
-
-def linspace_int(
-        a: INTEGER_DTYPE, 
-        b: INTEGER_DTYPE, 
-        npoints: UNSIGNED_INTEGER_DTYPE, 
-        out: Union[np.ndarray, None] = None
-    ) -> Union[np.ndarray, UNSIGNED_INTEGER_DTYPE]:
-    
-    if out is None:
-        return np.linspace(a, b, npoints, dtype=INTEGER_DTYPE)
-    
-    assert out.size >= npoints
-
-    buff, buff_h = mem.get_sb(npoints, mem.SbType.FLOAT)
-
-    np.divide(mem.SEQUENCE_INT[:npoints], npoints, out=buff, dtype=FLOAT_DTYPE)  # interpolation
-    buff *= (b - a)  # Scale
-    buff += a  # min value
-    
-    out[:npoints] = buff  # copy to output, this will truncate integers
-
-    mem.free_sb(buff_h, mem.SbType.FLOAT)
-
-    return npoints
+import numpy as np
 
 
 def interpolate_y(a: np.ndarray, b: np.ndarray, out: np.ndarray=None) -> np.ndarray:

@@ -104,7 +104,7 @@ def triangle_blit(
                     # color_buffer[y, x, 3] = 255
                     depth_buffer[y, x] = d
     
-    
+
 def compute_barycentric_coordinates(p: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray, out=np.ndarray) -> np.ndarray:
     v0 = b - a
     v1 = c - a

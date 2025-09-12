@@ -34,10 +34,9 @@ class Mesh:
             bp = transform @ b
             cp = transform @ c
 
-            if rasterizer.is_in_clip(ap, bp, cp):
-                num_tris += 1
-                direct.draw_triangle(
-                    rasterizer.to_screen(ap), rasterizer.to_screen(bp), 
-                    rasterizer.to_screen(cp), tcolors)
+            num_tris += 1
+            direct.draw_triangle(
+                rasterizer.to_screen(ap), rasterizer.to_screen(bp), 
+                rasterizer.to_screen(cp), tcolors)
                 
         return num_tris

@@ -1,61 +1,11 @@
 
 
-# def draw_triangle(
-#         a: np.ndarray, b: np.ndarray, c: np.ndarray, colors: np.ndarray,
-#         xab_full: Optional[np.ndarray], xbc_full: Optional[np.ndarray],
-#         xac_full: Optional[np.ndarray], xabc_full: Optional[np.ndarray],
-#         bary: Optional[np.ndarray]):
-
-
-
-# if should_do_allocation:
-#     xab_full, xab_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-#     xbc_full, xbc_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-#     xac_full, xac_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-#     xabc_full, xabc_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-#     bary, bary_h = mem.get_sb(3, mem.SbType.FLOAT)
-
-
-
-# if should_do_allocation:
-#     mem.free_sb(bary_h, mem.SbType.FLOAT)
-#     mem.free_sb(xabc_full_h, mem.SbType.INT)
-#     mem.free_sb(xac_full_h, mem.SbType.INT)
-#     mem.free_sb(xbc_full_h, mem.SbType.INT)
-#     mem.free_sb(xab_full_h, mem.SbType.INT)
-
-
-
-
-
-
-
-
-
-
-
-# xab_full, xab_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-# xbc_full, xbc_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-# xac_full, xac_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-# xabc_full, xabc_full_h = mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-# bary, bary_h = mem.get_sb(3, mem.SbType.FLOAT)
-
-# # TODO: Figure out how to broadcast this properly
-# for (a, b, c), tcolors in zip(triangles, triangle_colors):
-#     ap = transform @ a
-#     bp = transform @ b
-#     cp = transform @ c
-
-#     if rasterizer.is_in_clip(ap, bp, cp):
-#         num_tris += 1
-#         direct.draw_triangle(
-#             rasterizer.to_screen(ap), rasterizer.to_screen(bp), 
-#             rasterizer.to_screen(cp), tcolors, 
-#             xab_full, xbc_full, xac_full,
-#             xabc_full, bary)
-        
-# mem.free_sb(bary_h, mem.SbType.FLOAT)
-# mem.free_sb(xabc_full_h, mem.SbType.INT)
-# mem.free_sb(xac_full_h, mem.SbType.INT)
-# mem.free_sb(xbc_full_h, mem.SbType.INT)
-# mem.free_sb(xab_full_h, mem.SbType.INT)
+# def _is_in_clip(a: np.ndarray, b: np.ndarray, c: np.ndarray, depth_buffer: np.ndarray) -> bool:
+#     return (
+#         -a[3] <= a[0] <= a[3] and -a[3] <= a[1] <= a[3] and a[2] > 0 and
+#         -b[3] <= b[0] <= b[3] and -b[3] <= b[1] <= b[3] and b[2] > 0 and
+#         -c[3] <= c[0] <= c[3] and -c[3] <= c[1] <= c[3] and c[2] > 0 and
+#         a[2] <= depth_buffer[int(np.round(a[0])), int(np.round(a[1]))] and
+#         b[2] <= depth_buffer[int(np.round(b[0])), int(np.round(b[1]))] and
+#         c[2] <= depth_buffer[int(np.round(c[0])), int(np.round(c[1]))]
+#     )
