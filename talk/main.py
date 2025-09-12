@@ -29,7 +29,7 @@ def main(args):
     faces = np.array(mesh.faces, dtype=gpu.UNSIGNED_INTEGER_DTYPE)
 
     buff_surface_raw = gpu.screen.SCREEN.get_surface()
-    # buff_target = pygame.Surface((640*2, 480*2), flags=pygame.SRCALPHA)
+    buff_target = pygame.Surface((640, 480), flags=pygame.SRCALPHA)
     font = pygame.font.SysFont("Georgia", 16)
 
     clock = pygame.time.Clock()
@@ -66,15 +66,15 @@ def main(args):
                 pass
 
         # Update game
-        for kirby in kirbies:
-            kirby.movement_angle += np.deg2rad(kirby.rotation_speed)
-            kirby.position = kirby.original_position + np.array([
-                0.1*np.cos(kirby.movement_angle),
-                0.1*np.sin(kirby.movement_angle),
-                0.1*np.sin(kirby.movement_angle)*np.cos(kirby.movement_angle),
-            ])
-            kirby.rotation[kirby.rotation_angle] += np.deg2rad(kirby.rotation_speed)
-            kirby.rotation[(kirby.rotation_angle+1) % 3] += np.deg2rad(kirby.rotation_speed)*2
+        # for kirby in kirbies:
+        #     kirby.movement_angle += np.deg2rad(kirby.rotation_speed)
+        #     kirby.position = kirby.original_position + np.array([
+        #         0.1*np.cos(kirby.movement_angle),
+        #         0.1*np.sin(kirby.movement_angle),
+        #         0.1*np.sin(kirby.movement_angle)*np.cos(kirby.movement_angle),
+        #     ])
+        #     kirby.rotation[kirby.rotation_angle] += np.deg2rad(kirby.rotation_speed)
+        #     kirby.rotation[(kirby.rotation_angle+1) % 3] += np.deg2rad(kirby.rotation_speed)*2
 
         tri_count = 0
         # Render game objects
@@ -82,7 +82,9 @@ def main(args):
             tri_count += kirby.render(projection)
 
         # Render to the screen
-        screen.blit(buff_surface_raw, (0, 0))
+        # screen.blit(buff_surface_raw, (0, 0))
+        pygame.transform.scale2x(buff_surface_raw.convert_alpha(), buff_target)
+        screen.blit(buff_target, (0, 0))
         gpu.direct.clear()
         surf = font.render(f"FPS: {clock.get_fps()}", False, (255, 255, 255))
         surf_tri_count = font.render(f"Triangle Count: {tri_count}", False, (255, 255, 255))
