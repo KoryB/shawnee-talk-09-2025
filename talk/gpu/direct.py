@@ -94,8 +94,8 @@ def draw_triangle(
         x_left = xabc
         x_right = xac
 
-    x_left = np.clip(x_left, 0, SCREEN_WIDTH)
-    x_right = np.clip(x_right, 0, SCREEN_WIDTH)
+    x_left = np.clip(x_left, 0,  SCREEN_WIDTH - 1)
+    x_right = np.clip(x_right, 0, SCREEN_WIDTH - 1)
 
     y_top = ai[1]
     y_bottom = ci[1]
@@ -105,8 +105,8 @@ def draw_triangle(
         x_left = x_left[-ai[1]:]
         x_right = x_right[-ai[1]:]
 
-    if ci[1] > SCREEN_HEIGHT:
-        y_bottom = SCREEN_HEIGHT
+    if ci[1] > SCREEN_HEIGHT - 1:
+        y_bottom = SCREEN_HEIGHT - 1
         x_left = x_left[:ci[1]]
         x_right = x_right[:ci[1]]
 
