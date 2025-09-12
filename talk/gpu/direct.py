@@ -1,19 +1,15 @@
 from .constants import *
 from . import gpu_math as gpum
 from . import memory as mem
-from .screen import Screen, Color, SCREEN
+from .screen import SCREEN, DEFAULT_COLOR
 
 import numpy as np
 from numba import njit
 
 
-def clear(buff: Screen, color: Color):
-    buff.color_buffer[:, :, :] = color.array
-    buff.depth_buffer[:, :] = 1.0
-
-
-def draw_rect(buff: Screen, x: int, y: int, w: int, h: int, color: Color):
-    buff.color_buffer[y:(y+h), x:(x+w), :] = color.array
+def clear():
+    SCREEN.color_buffer[:, :, :] = DEFAULT_COLOR
+    SCREEN.depth_buffer[:, :] = 1.0
 
 
 def get_line(a: np.ndarray, b: np.ndarray, out_x: np.ndarray, out_y: np.ndarray):
@@ -24,44 +20,22 @@ def get_line(a: np.ndarray, b: np.ndarray, out_x: np.ndarray, out_y: np.ndarray)
     return npoints
 
 
-def draw_line(array: np.ndarray, a: np.ndarray, b: np.ndarray, color: np.ndarray):
-    out_x, out_x_h = mem.mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-    out_y, out_y_h = mem.mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
-
-    npoints = get_line(a, b, out_x, out_y)
-    array[out_y[:npoints], out_x[:npoints], :] = color
-
-    mem.mem.free_sb(out_y_h)
-    mem.mem.free_sb(out_x_h)
+# def draw_rect(x: INTEGER_DTYPE, y: INTEGER_DTYPE, w: INTEGER_DTYPE, h: INTEGER_DTYPE, color: np.ndarray):
+#     SCREEN.color_buffer[y:(y+h), x:(x+w), :] = color.array
 
 
-@njit
-def triangle_blit(
-        x_left: np.ndarray, x_right: np.ndarray, y0: INTEGER_DTYPE, y1: INTEGER_DTYPE, 
-        a: np.ndarray, b: np.ndarray, c: np.ndarray, 
-        bary_temp: np.ndarray, colors: np.ndarray, color_buffer: np.ndarray, depth_buffer: np.ndarray):
-    for y in range(y0, y1 + 1):
-        i = y - y0
+# def draw_line(a: np.ndarray, b: np.ndarray, color: np.ndarray):
+#     out_x, out_x_h = mem.mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
+#     out_y, out_y_h = mem.mem.get_sb(SCRATCH_BUFFER_SIZE, mem.SbType.INT)
 
-        for x in range(x_left[i], x_right[i] + 1):
-            p = np.array([x, y], dtype=INTEGER_DTYPE)
+#     npoints = get_line(a, b, out_x, out_y)
+#     array[out_y[:npoints], out_x[:npoints], :] = color
 
-            compute_barycentric_coordinates(p, c[0:2], a[0:2], b[0:2], bary_temp)
-
-            if bary_temp[0] > -1:
-                d = bary_temp[0]*a[2] + bary_temp[1]*b[2] + bary_temp[2]*c[2]
-
-                if d < depth_buffer[y, x]:
-                    color_buffer[y, x, :] = bary_temp[0]*colors[0] + bary_temp[1]*colors[1] + bary_temp[2]*colors[2]
-                    # TODO KB: Mention this bug and solving it
-                    # color_buffer[y, x, 0] = bary_temp[0]*255
-                    # color_buffer[y, x, 1] = bary_temp[1]*255
-                    # color_buffer[y, x, 2] = bary_temp[2]*255
-                    # color_buffer[y, x, 3] = 255
-                    depth_buffer[y, x] = d
+#     mem.mem.free_sb(out_y_h)
+#     mem.mem.free_sb(out_x_h)
 
 
-def draw_triangle(buff: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray, colors: np.ndarray):
+def draw_triangle(a: np.ndarray, b: np.ndarray, c: np.ndarray, colors: np.ndarray):
     # Sort point y values
     a_orig = np.copy(a)
     b_orig = np.copy(b)
@@ -146,6 +120,34 @@ def draw_triangle(buff: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray,
     mem.free_sb(xbc_full_h, mem.SbType.INT)
     mem.free_sb(xab_full_h, mem.SbType.INT)
 
+
+# Numba stuff
+
+@njit
+def triangle_blit(
+        x_left: np.ndarray, x_right: np.ndarray, y0: INTEGER_DTYPE, y1: INTEGER_DTYPE, 
+        a: np.ndarray, b: np.ndarray, c: np.ndarray, 
+        bary_temp: np.ndarray, colors: np.ndarray, color_buffer: np.ndarray, depth_buffer: np.ndarray):
+    for y in range(y0, y1 + 1):
+        i = y - y0
+
+        for x in range(x_left[i], x_right[i] + 1):
+            p = np.array([x, y], dtype=INTEGER_DTYPE)
+
+            compute_barycentric_coordinates(p, c[0:2], a[0:2], b[0:2], bary_temp)
+
+            if bary_temp[0] > -1:
+                d = bary_temp[0]*a[2] + bary_temp[1]*b[2] + bary_temp[2]*c[2]
+
+                if d < depth_buffer[y, x]:
+                    color_buffer[y, x, :] = bary_temp[0]*colors[0] + bary_temp[1]*colors[1] + bary_temp[2]*colors[2]
+                    # TODO KB: Mention this bug and solving it
+                    # color_buffer[y, x, 0] = bary_temp[0]*255
+                    # color_buffer[y, x, 1] = bary_temp[1]*255
+                    # color_buffer[y, x, 2] = bary_temp[2]*255
+                    # color_buffer[y, x, 3] = 255
+                    depth_buffer[y, x] = d
+    
     
 @njit
 def compute_barycentric_coordinates(p: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.ndarray, out=np.ndarray) -> np.ndarray:

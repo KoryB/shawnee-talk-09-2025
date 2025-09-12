@@ -4,3 +4,4 @@ from . import gpu_math
 from . import memory
 from . import rasterizer
 from . import screen
+from .mesh import Mesh

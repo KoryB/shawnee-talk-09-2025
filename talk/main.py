@@ -17,44 +17,41 @@ def parse_args():
 
 
 def main(args):
+    # Setup
     pygame.init()
     np.random.seed(1234)
     screen = pygame.display.set_mode((640, 480))
 
     mesh = trimesh.load(MESH_FILE, force='mesh')
     colors = np.array(mesh.visual.vertex_colors, gpu.BYTE_DTYPE)
-
     vertices = np.array(mesh.vertices, dtype=gpu.FLOAT_DTYPE)
     vertices = np.column_stack([vertices, np.ones(len(vertices), dtype=gpu.FLOAT_DTYPE)])
     faces = np.array(mesh.faces, dtype=gpu.UNSIGNED_INTEGER_DTYPE)
 
-    world_matrix = gpu.rasterizer.translate(np.array([0, 0, -0.5], dtype=gpu.FLOAT_DTYPE))
-
-    gpu_screen = gpu.screen.SCREEN
-    
-    gpu.direct.draw_rect(gpu_screen, 16, 32, 64, 128, gpu.screen.Color(0x00, 0x00, 0x00))
-
-    buff_surface_raw = gpu_screen.get_surface()
+    buff_surface_raw = gpu.screen.SCREEN.get_surface()
     buff_target = pygame.Surface((640, 480), flags=pygame.SRCALPHA)
     font = pygame.font.SysFont("Georgia", 16)
 
     clock = pygame.time.Clock()
-    spin_angle = 0.0
+
+    # variables
+    kirbies = []
+
+    for r in range(3):
+        for c in range(3):
+            if r == 1 or c == 1:
+                x = [-0.7, 0.0, 0.7][c]
+                y = [-0.7, 0.0, 0.7][r]
+
+                kirby = gpu.Mesh(vertices, faces, colors)
+                kirby.rotation_speed = r + c + 2
+                kirby.rotation_angle = (1 + r ^ c) % 2
+
+                kirby.position = np.array([x, y, -0.8 - np.abs(x*0.5) - np.abs(y*0.5)], dtype=gpu.FLOAT_DTYPE)
+
+                kirbies.append(kirby)
 
     projection = gpu.rasterizer.projection(90, gpu.SCREEN_ASPECT_RATIO, 0.1)  # What should f be? Something about view angle?
-    x = 0
-    y = 0
-    z = -0.5
-
-    a = np.array([x - 0.3, y, -0.5, 1])
-    b = np.array([x + 0.3, y, -0.5, 1])
-    c = np.array([x, y + 0.3, z, 1])
-
-    ap = projection @ a
-    bp = projection @ b
-    cp = projection @ c
-
-    rotation_matrix = np.eye(4, dtype=gpu.FLOAT_DTYPE)
 
     while True:
         # Process player inputs.
@@ -64,48 +61,25 @@ def main(args):
                 raise SystemExit
             
             if event.type == pygame.MOUSEWHEEL:
-                if event.y > 0:
-                    spin_angle += 5
+                pass
 
-                else:
-                    spin_angle -= 5
+        # Update game
+        for kirby in kirbies:
+            kirby.rotation[kirby.rotation_angle] += np.deg2rad(kirby.rotation_speed)
 
-        gpu.rasterizer.rotation_z(np.deg2rad(spin_angle), out=rotation_matrix)
-        triangles = vertices[faces]
-        triangle_colors = colors[faces]
+        # Render game objects
+        for kirby in kirbies:
+            kirby.render(projection)
 
-        # TODO: Figure out how to broadcast this properly
-        for (a, b, c), tcolors in zip(triangles, triangle_colors):
-            ap = projection @ world_matrix @ rotation_matrix @ a
-            bp = projection @ world_matrix @ rotation_matrix @ b
-            cp = projection @ world_matrix @ rotation_matrix @ c
-
-            if gpu.rasterizer.is_in_clip(ap, bp, cp, gpu.memory.DEPTH_BUFFER):
-                gpu.direct.draw_triangle(
-                    gpu_screen.color_buffer, gpu.rasterizer.to_screen(ap), 
-                    gpu.rasterizer.to_screen(bp), gpu.rasterizer.to_screen(cp), 
-                    tcolors)
-                
-
-        # num_tris = 600
-        # xs = np.random.randint(gpu.screen.SCREEN_WIDTH // 2, size=3*num_tris)
-        # ys = np.random.randint(gpu.screen.SCREEN_HEIGHT // 2, size=3*num_tris)
-        # for i in range(num_tris):
-        #     gpu.direct.draw_triangle(
-        #         gpu_screen.array, np.array([xs[i], ys[i]]), np.array([xs[i+1], ys[i+1]]), np.array([xs[i+2], ys[i+2]]), 
-        #         gpu.screen.Color(255 * i/num_tris, 0, 128 * i/num_tris).array)
-
-        # Do logical updates here.
-        # ...
-
-        
-
-        # buff_target = buff_surface_raw.convert_alpha()
+        # Render to the screen
         pygame.transform.scale2x(buff_surface_raw.convert_alpha(), buff_target)
-        gpu.direct.clear(gpu.screen.SCREEN, gpu.screen.Color(64, 64, 64))
+        gpu.direct.clear()
         screen.blit(buff_target, (0, 0))
-        surf = font.render(f"FPS: {clock.get_fps()}", False, (0, 0, 0))
+        surf = font.render(f"FPS: {clock.get_fps()}", False, (255, 255, 255))
+        tri_count = sum(len(k.vertices) for k in kirbies)
+        surf_tri_count = font.render(f"Triangle Count: {tri_count}", False, (255, 255, 255))
         screen.blit(surf, (0, 0))
+        screen.blit(surf_tri_count, (0, 24))
 
         pygame.display.flip()  # Refresh on-screen display
-        clock.tick(30)         # wait until next frame (at 30 FPS)
+        clock.tick(20)         # wait until next frame (at 30 FPS)
