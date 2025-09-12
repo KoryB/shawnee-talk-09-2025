@@ -29,7 +29,7 @@ def main(args):
     faces = np.array(mesh.faces, dtype=gpu.UNSIGNED_INTEGER_DTYPE)
 
     buff_surface_raw = gpu.screen.SCREEN.get_surface()
-    buff_target = pygame.Surface((640, 480), flags=pygame.SRCALPHA)
+    # buff_target = pygame.Surface((640*2, 480*2), flags=pygame.SRCALPHA)
     font = pygame.font.SysFont("Georgia", 16)
 
     clock = pygame.time.Clock()
@@ -82,13 +82,12 @@ def main(args):
             tri_count += kirby.render(projection)
 
         # Render to the screen
-        pygame.transform.scale2x(buff_surface_raw.convert_alpha(), buff_target)
+        screen.blit(buff_surface_raw, (0, 0))
         gpu.direct.clear()
-        screen.blit(buff_target, (0, 0))
         surf = font.render(f"FPS: {clock.get_fps()}", False, (255, 255, 255))
         surf_tri_count = font.render(f"Triangle Count: {tri_count}", False, (255, 255, 255))
         screen.blit(surf, (0, 0))
         screen.blit(surf_tri_count, (0, 24))
 
         pygame.display.flip()  # Refresh on-screen display
-        clock.tick(30)         # wait until next frame (at 30 FPS)
+        clock.tick()         # wait until next frame (at 30 FPS)
