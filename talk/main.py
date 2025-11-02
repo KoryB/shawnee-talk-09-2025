@@ -66,15 +66,15 @@ def main(args):
                 pass
 
         # Update game
-        # for kirby in kirbies:
-        #     kirby.movement_angle += np.deg2rad(kirby.rotation_speed)
-        #     kirby.position = kirby.original_position + np.array([
-        #         0.1*np.cos(kirby.movement_angle),
-        #         0.1*np.sin(kirby.movement_angle),
-        #         0.1*np.sin(kirby.movement_angle)*np.cos(kirby.movement_angle),
-        #     ])
-        #     kirby.rotation[kirby.rotation_angle] += np.deg2rad(kirby.rotation_speed)
-        #     kirby.rotation[(kirby.rotation_angle+1) % 3] += np.deg2rad(kirby.rotation_speed)*2
+        for kirby in kirbies:
+            kirby.movement_angle += np.deg2rad(kirby.rotation_speed)
+            kirby.position = kirby.original_position + np.array([
+                0.1*np.cos(kirby.movement_angle),
+                0.1*np.sin(kirby.movement_angle),
+                0.1*np.sin(kirby.movement_angle)*np.cos(kirby.movement_angle),
+            ])
+            kirby.rotation[kirby.rotation_angle] += np.deg2rad(kirby.rotation_speed)
+            kirby.rotation[(kirby.rotation_angle+1) % 3] += np.deg2rad(kirby.rotation_speed)*2
 
         tri_count = 0
         # Render game objects
