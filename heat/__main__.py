@@ -12,7 +12,7 @@ LAPLACIAN_KERNEL = np.array([
     [0, 1, 0]
 ])
 
-HEAT_COEFF = 100.0
+HEAT_COEFF = 1.0
 
 
 # Uses valid, assumes a one-cell border for boundary
@@ -21,7 +21,7 @@ def laplacian(arr: np.array) -> np.array:
 
 
 def create_surface(arr: np.array) -> pygame.Surface:
-    to_pygame = (arr * 255).astype(int)
+    to_pygame = ((arr/arr.max()) * 255).astype(int)
     to_pygame = np.stack([to_pygame, to_pygame, to_pygame], axis=-1)
 
     return pygame.surfarray.make_surface(to_pygame)
@@ -33,6 +33,13 @@ def set_boundary(arr):
     arr[:, -1] = arr[:, -2]
     arr[0, :] = arr[1, :]
     arr[-1, :] = arr[-2, :]
+
+
+def step_simulation(u_with_boundary, dt):
+    set_boundary(u_with_boundary)
+    del2 = laplacian(u_with_boundary)
+    return dt * HEAT_COEFF * del2
+
 
 
 def main():
@@ -60,12 +67,12 @@ def main():
             if event.type == pygame.MOUSEWHEEL:
                 pass
         
-        dt_ms = clock.tick()         # wait until next frame (at 30 FPS)
-        dt_s = dt_ms / 1000.0
+        dt_ms = clock.tick(60)         # wait until next frame (at 30 FPS)
 
-        set_boundary(u_with_boundary)
-        del2 = laplacian(u_with_boundary)
-        u += dt_s * HEAT_COEFF * del2
+        for _ in range(10):
+            u += step_simulation(u_with_boundary, 1/10)
+
+        print(u.sum())
 
         screen.blit(create_surface(u), (0, 0))
 
