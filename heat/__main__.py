@@ -30,7 +30,10 @@ pygame.init()
 np.random.seed(1234)
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
-u = np.full((SIMULATION_WIDTH, SIMULATION_HEIGHT), 0.5)
+u = np.zeros((SIMULATION_WIDTH, SIMULATION_HEIGHT))
+center_x = slice(SIMULATION_WIDTH//2 - 3, SIMULATION_WIDTH//2 + 4)
+center_y = slice(SIMULATION_HEIGHT//2 - 3, SIMULATION_HEIGHT//2 + 4)
+u[center_x, center_y] = 1.0
 
 simulation_time = 0.0
 

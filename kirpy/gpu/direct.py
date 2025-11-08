@@ -98,11 +98,6 @@ def triangle_blit(
 
                 if d < depth_buffer[y, x]:
                     color_buffer[y, x, :] = bary_temp[0]*colors[0] + bary_temp[1]*colors[1] + bary_temp[2]*colors[2]
-                    # TODO KB: Mention this bug and solving it
-                    # color_buffer[y, x, 0] = bary_temp[0]*255
-                    # color_buffer[y, x, 1] = bary_temp[1]*255
-                    # color_buffer[y, x, 2] = bary_temp[2]*255
-                    # color_buffer[y, x, 3] = 255
                     depth_buffer[y, x] = d
     
 @njit

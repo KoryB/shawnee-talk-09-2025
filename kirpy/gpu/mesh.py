@@ -21,7 +21,6 @@ class Mesh:
         num_tris = 0
         translation = rasterizer.translate(self.position)
         rotation = rasterizer.rotation(self.rotation[0], self.rotation[1], self.rotation[2])
-        # rotation = rasterizer.rotation_y(self.rotation[1])
         world_matrix = translation @ rotation
         transform = projection @ world_matrix
 
